@@ -1,0 +1,72 @@
+info:
+  description: Spring Cloud Samples
+  author: julio muñoz
+  
+eureka:
+  hostname: localhost
+     
+  #Virtual host name by which the clients identifies this service
+  virtualHostName: ${spring.application.name}
+    
+  leaseRenewalIntervalInSeconds: 10
+  statusPageUrlPath: /admin/info
+  healthCheckUrlPath: /admin/health
+  metadataMap:
+    instanceId: ${spring.application.name}
+  
+   
+  password: '{cipher}d61b84775382eacebb954052fe717766bc063fd923aea9d416c979e5cf80df86'
+  client:
+    serviceUrl:
+      defaultZone: http://user:${eureka.password}@localhost:8761/eureka/
+    
+    #Region where eureka is deployed -For AWS specify one of the AWS regions, for other datacenters specify a arbitrary string
+    #indicating the region.This is normally specified as a -D option (eg) -Deureka.region=us-east-1
+    region: default
+    
+    #For eureka clients running in eureka server, it needs to connect to servers in other zones
+    preferSameZone: false
+
+---
+spring:
+  profiles: cloud
+  cloud:
+    config:
+      uri: ${vcap.services.${PREFIX:}configserver.credentials.uri:http://${PREFIX:}${configserver.${application.domain:cfapps.io}}}
+oauth2:
+  client:
+    tokenUri: ${vcap.services.${PREFIX:}sso.credentials.tokenUri:}
+    authorizationUri: ${vcap.services.${PREFIX:}sso.credentials.authorizationUri:}
+    clientId: ${vcap.services.${PREFIX:}sso.credentials.clientId:}
+    clientSecret: ${vcap.services.${PREFIX:}sso.credentials.clientSecret:}
+  resource:
+    tokenInfoUri: ${vcap.services.${OAUTH2_RESOURCE_SERVICEID:${oauth2.resource.serviceId:sso}}.credentials.tokenInfoUri:}
+    serviceId: ${PREFIX:}resource
+application:
+  domain: ${APPLICATION_DOMAIN:cfapps.io}
+endpoints:
+  restart: enabled
+  shutdown: enabled
+eureka:
+  instance:
+    hostname: ${PREFIX:}${spring.application.name}.${application.domain:cfapps.io}
+    nonSecurePort: 80
+  client:
+    serviceUrl:
+      defaultZone: ${vcap.services.${PREFIX:}eureka.credentials.uri:http://${PREFIX:}eureka.${application.domain:cfapps.io}}/eureka/
+
+---
+spring:
+  profiles: docker
+  cloud:
+    config:
+      uri: http://${CONFIGSERVER_1_PORT_8888_TCP_ADDR:localhost}:8888
+endpoints:
+  restart: enabled
+eureka:
+  instance:
+    nonSecurePort: 80
+    preferIpAddress: true
+  client:
+    serviceUrl:
+      defaultZone: http://${EUREKA_1_PORT_8761_TCP_ADDR:localhost}:8761/eureka/
